@@ -1,0 +1,1 @@
+OCR_LANGUAGES = ['ar', 'en']

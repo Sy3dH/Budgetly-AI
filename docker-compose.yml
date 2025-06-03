@@ -1,0 +1,23 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: poc-server
+    ports:
+      - "8003:8003"
+    command: python api.py
+
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: poc-client
+    working_dir: /app/frontend
+    environment:
+      - API_URL=http://server:8003/process
+    ports:
+      - "8501:8501"
+    command: streamlit run app.py
+    depends_on:
+      - server

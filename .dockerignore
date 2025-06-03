@@ -1,0 +1,53 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Virtual environments
+.env
+.venv
+venv/
+env/
+ENV/
+
+# Editor & OS files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Tests and debug artifacts
+*.log
+*.pytest_cache/
+coverage.*
+htmlcov/
+
+# Git
+.git/
+.gitignore
+
+# Compiled assets
+*.so
+*.egg-info/
+dist/
+build/
+
+# Docker cache
+*.tar
+docker-compose.override.yml
+
+# Node / frontend extras (if you ever add frontend build tools)
+node_modules/
+*.tsbuildinfo
+
+# Ignore README if not needed in build (optional)
+# README.md
+
+# Ignore entire .cargo cache if installing uv with cargo (optional)
+.cargo/
+tests/
+
+# Skip local data files (if any)
+data/
