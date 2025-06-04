@@ -6,11 +6,10 @@ WORKDIR /app
 
 # Copy the requirements file into the container
 COPY requirements.txt .
-COPY .env /app
 
 # Install the dependencies
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code
-COPY POC/src /app
+COPY ./src /app

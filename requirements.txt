@@ -1,0 +1,13 @@
+pillow~=11.2.1
+google-genai==1.18.0
+pydantic~=2.11.4
+protobuf~=6.31.0
+easyocr~=1.7.2
+numpy~=2.2.5
+transformers~=4.52.2
+fastapi==0.115.12
+streamlit==1.45.1
+faster-whisper==1.1.1,
+python-dotenv>=1.1.0,
+python-multipart>=0.0.20
+uvicorn>=0.34.3
