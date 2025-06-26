@@ -3,6 +3,7 @@ import os
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from dotenv import load_dotenv
 from tempfile import NamedTemporaryFile
 from pathlib import Path
@@ -16,6 +17,13 @@ from structure.structure_llm import (
     parse_receipt_with_gemini,
     parse_receipt_image_with_gemini
 )
+from chat.chat import (
+    natural_language_to_sql,
+    extract_sql,
+    execute_safe_query,
+    generate_natural_language_response,
+    format_query_results
+)
 
 load_dotenv()
 app = FastAPI(title="Receipt Processor API")
@@ -26,6 +34,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Pydantic models for NL2SQL
+class NLQueryRequest(BaseModel):
+    question: str
+
+
+class NLQueryResponse(BaseModel):
+    original_question: str
+    generated_sql: str
+    natural_language_response: str
+    raw_results: list = None
+    error: str = None
+
 
 def detect_file_type(file_path: str) -> str:
     mime, _ = guess_type(file_path)
@@ -41,10 +63,11 @@ def detect_file_type(file_path: str) -> str:
         return "audio"
     return "unknown"
 
+
 @app.post("/process")
 async def process_receipt(
-    file: UploadFile = File(...),
-    e2e: bool = Form(False)
+        file: UploadFile = File(...),
+        e2e: bool = Form(False)
 ):
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
@@ -83,6 +106,66 @@ async def process_receipt(
     finally:
         os.remove(temp_path)
 
+
+@app.post("/query", response_model=NLQueryResponse)
+async def query_database(request: NLQueryRequest):
+    """
+    Endpoint to query the database using natural language.
+    Converts natural language to SQL, executes it safely, and returns a natural language response.
+    """
+    try:
+        # Generate SQL from natural language
+        sql = natural_language_to_sql(request.question)
+        cleaned_sql = extract_sql(sql)
+
+        if not cleaned_sql:
+            raise HTTPException(status_code=400, detail="Unable to generate valid SQL from the question.")
+
+        # Execute the query safely
+        try:
+            results, nl_response = execute_safe_query(cleaned_sql, request.question)
+
+            if results is None:
+                return NLQueryResponse(
+                    original_question=request.question,
+                    generated_sql=cleaned_sql,
+                    natural_language_response="Sorry, I couldn't execute the query due to a database error.",
+                    error="Database execution failed"
+                )
+
+            # Convert results to list of dictionaries for JSON serialization
+            raw_results = []
+            if results:
+                # Assuming results are tuples, convert to list of lists
+                raw_results = [list(row) for row in results]
+
+            return NLQueryResponse(
+                original_question=request.question,
+                generated_sql=cleaned_sql,
+                natural_language_response=nl_response,
+                raw_results=raw_results
+            )
+
+        except ValueError as ve:
+            # This handles the "Only read-only queries are allowed" error
+            return NLQueryResponse(
+                original_question=request.question,
+                generated_sql=cleaned_sql,
+                natural_language_response="I can only execute read-only queries for security reasons. Please ask questions that don't require data modification.",
+                error=str(ve)
+            )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Query processing error: {str(e)}")
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "service": "Receipt Processor API with NL2SQL"}
+
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8003)
