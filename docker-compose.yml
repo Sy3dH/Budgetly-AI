@@ -6,7 +6,9 @@ services:
     container_name: poc-server
     ports:
       - "8003:8003"
-    command: python api.py
+    env_file:
+      - .env
+    command: python /app/api.py
 
   client:
     build:
