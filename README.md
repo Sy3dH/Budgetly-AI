@@ -20,6 +20,7 @@ Create a `.env` file in the root directory of your project and add your Gemini A
 ```bash
 GEMINI_API_KEY=your_gemini_api_key_here
 ```
+In order to use the query API for talking to the database, provide the `MYSQL-HOST`, `MYSQL-DATABASE`, `MYSQL-USER` & `MYSQL-PASSWORD` in the `.env`.
 
 **Important:** Replace `your_gemini_api_key_here` with your actual Gemini API key.
 
