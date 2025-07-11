@@ -133,17 +133,11 @@ async def query_database(request: NLQueryRequest):
                     error="Database execution failed"
                 )
 
-            # Convert results to list of dictionaries for JSON serialization
-            raw_results = []
-            if results:
-                # Assuming results are tuples, convert to list of lists
-                raw_results = [list(row) for row in results]
-
             return NLQueryResponse(
                 original_question=request.question,
                 generated_sql=cleaned_sql,
                 natural_language_response=nl_response,
-                raw_results=raw_results
+                raw_results=results
             )
 
         except ValueError as ve:
