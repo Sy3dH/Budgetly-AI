@@ -92,39 +92,13 @@ Return only the SQL code.
     return response.text.strip("`")  # remove markdown-style formatting
 
 
-def format_query_results(results, cursor_description):
-    """Format query results into a readable string with column headers"""
-    if not results:
-        return "No results found."
-
-    # Get column names
-    columns = [desc[0] for desc in cursor_description]
-
-    # Create formatted output
-    formatted_results = []
-    formatted_results.append("Query Results:")
-    formatted_results.append("-" * 50)
-
-    # Add header
-    header = " | ".join(columns)
-    formatted_results.append(header)
-    formatted_results.append("-" * len(header))
-
-    # Add rows
-    for row in results:
-        row_str = " | ".join(str(value) if value is not None else "NULL" for value in row)
-        formatted_results.append(row_str)
-
-    return "\n".join(formatted_results)
-
-
 def generate_natural_language_response(original_query: str, sql_query: str, query_results: str) -> str:
     """Generate a natural language response based on the query and its results"""
     schema = get_table_schema()
 
     prompt = f"""
 You are a helpful financial assistant. A user asked a question about their financial data, and you executed a SQL query to get the answer.
-
+Read the data from the SQL result and give a summary of the answer. Make sure the tone is friendly and helpful to the user.
 Database Schema:
 {schema}
 
@@ -166,14 +140,8 @@ def execute_safe_query(sql: str, original_query: str):
         # Fetch rows and map to dict
         results = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-        # Format results for display and LLM processing
-        formatted_results = format_query_results(results, cursor.description)
-        print("Raw Results:")
-        print(formatted_results)
-        print("\n" + "=" * 60 + "\n")
-
         # Generate natural language response
-        nl_response = generate_natural_language_response(original_query, sql, formatted_results)
+        nl_response = generate_natural_language_response(original_query, sql, results)
         print("Natural Language Response:")
         print(nl_response)
 
