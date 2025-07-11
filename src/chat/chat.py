@@ -1,8 +1,8 @@
 import os
 import logging
 from dotenv import load_dotenv
-from chat.db_config import get_db_connection
-from chat.query_guard import is_read_only
+from src.chat.db_config import get_db_connection
+from src.chat.query_guard import is_read_only
 from google import genai
 import re
 
@@ -161,7 +161,10 @@ def execute_safe_query(sql: str, original_query: str):
         logging.info(f"Executing query: {sql}")
         cursor.execute(sql)
 
-        results = cursor.fetchall()
+        columns = [desc[0] for desc in cursor.description]
+
+        # Fetch rows and map to dict
+        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
         # Format results for display and LLM processing
         formatted_results = format_query_results(results, cursor.description)
@@ -186,21 +189,21 @@ def execute_safe_query(sql: str, original_query: str):
 
 
 def main():
-    nl_query = "What is the total expense of the Fuel?"
+    nl_query = "What's the cost related to fuel"
 
     print(f"User Question: {nl_query}")
     print("-" * 60)
 
     # Generate SQL
     sql = natural_language_to_sql(nl_query)
-    print(f"Generated SQL:\n{sql}")
-    print("-" * 60)
 
     # Clean and execute SQL
     cleaned_sql = extract_sql(sql)
-
+    print(f"Generated SQL:\n{cleaned_sql}")
+    print("-" * 60)
     try:
         results, nl_response = execute_safe_query(cleaned_sql, nl_query)
+        print(results)
     except ValueError as ve:
         print(f"❌ Rejected: {ve}")
 
