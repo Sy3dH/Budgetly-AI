@@ -21,8 +21,7 @@ from chat.chat import (
     natural_language_to_sql,
     extract_sql,
     execute_safe_query,
-    generate_natural_language_response,
-    format_query_results
+    generate_natural_language_response
 )
 
 load_dotenv()
