@@ -38,6 +38,7 @@ app.add_middleware(
 # Pydantic models for NL2SQL
 class NLQueryRequest(BaseModel):
     question: str
+    account_id: int
 
 
 class NLQueryResponse(BaseModel):
@@ -114,7 +115,7 @@ async def query_database(request: NLQueryRequest):
     """
     try:
         # Generate SQL from natural language
-        sql = natural_language_to_sql(request.question)
+        sql = natural_language_to_sql(request.question, request.account_id)
         cleaned_sql = extract_sql(sql)
 
         if not cleaned_sql:

@@ -73,23 +73,65 @@ def get_table_schema():
 """
 
 
-def natural_language_to_sql(nl_query: str) -> str:
+def natural_language_to_sql(nl_query: str, account_id: int) -> str:
     schema = get_table_schema()
     prompt = f"""
-You are a SQL assistant. Convert the following natural language request into a single secure MySQL query.
-Avoid any destructive operations (no UPDATE, DELETE, INSERT, DROP, etc.). Here are the following tables and their detailed columns:
+You are a SQL assistant. Convert the following natural language request into a secure, read-only MySQL query. You
+are a personalized assistant that sees the conversation according to the user id provided. So don't say things like account Id this or that.
+Use the given `account_id` to filter results. Do not include any write operations (INSERT, UPDATE, DELETE, etc.).
 
+🧠 Important Rules:
+- Dates are stored as UNIX timestamps in **milliseconds** (e.g., 1748754000000). Use `FROM_UNIXTIME(date/1000)` to convert to MySQL DATETIME.
+- All queries must include: `WHERE accountId = {account_id}`
+- Only use SELECT queries. No INSERT, UPDATE, DELETE, DROP, or any modification.
+
+📂 Categories (categoryId → categoryName):
+1 → Food  
+2 → Transport  
+3 → Housing  
+4 → Entertainment  
+5 → Salary  
+6 → Utilities  
+7 → Healthcare  
+8 → Education  
+9 → Savings  
+10 → Miscellaneous
+
+📑 Subcategories (categoryId → subCategoryName):
+1 → Groceries, Dining Out  
+2 → Public Transport, Fuel  
+3 → Rent, Mortgage  
+4 → Movies, Concerts  
+5 → Monthly Salary, Bonus  
+6 → Electricity, Water  
+7 → Doctor Visits, Medications  
+8 → Tuition, Books  
+9 → Emergency Fund, Retirement  
+10 → Gifts, Charity
+
+💡 `subcategories.urgency` field can only be one of:
+- 'Need'
+- 'Want'
+
+💡 `categories.categoryType` can only be:
+- 'Expense'
+- 'Income'
+
+Here is the database schema:
 {schema}
 
+The user's accountId is: {account_id}
+
 Natural language: "{nl_query}"
-Return only the SQL code.
+
+Return only the SQL query (in a MySQL-compatible format), no explanations.
 """
     response = client.models.generate_content(
         model="gemini-2.0-flash",
         contents=prompt,
     )
 
-    return response.text.strip("`")  # remove markdown-style formatting
+    return response.text.strip("`")
 
 
 def generate_natural_language_response(original_query: str, sql_query: str, query_results: str) -> str:
@@ -157,13 +199,14 @@ def execute_safe_query(sql: str, original_query: str):
 
 
 def main():
-    nl_query = "What's the cost related to fuel"
+    account_id = 2 # Replace this with actual input
+    nl_query = "List all my recurring (frequent) transactions."
 
     print(f"User Question: {nl_query}")
     print("-" * 60)
 
     # Generate SQL
-    sql = natural_language_to_sql(nl_query)
+    sql = natural_language_to_sql(nl_query, account_id=account_id)
 
     # Clean and execute SQL
     cleaned_sql = extract_sql(sql)
