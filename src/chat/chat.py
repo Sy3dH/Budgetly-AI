@@ -73,17 +73,16 @@ def get_table_schema():
 """
 
 
-def natural_language_to_sql(nl_query: str, account_id: int) -> str:
+def natural_language_to_sql(nl_query: str) -> str:
     schema = get_table_schema()
     prompt = f"""
-You are a SQL assistant. Convert the following natural language request into a secure, read-only MySQL query. You
-are a personalized assistant that sees the conversation according to the user id provided. So don't say things like account Id this or that.
-Use the given `account_id` to filter results. Do not include any write operations (INSERT, UPDATE, DELETE, etc.).
+You are a SQL assistant. Convert the following natural language request into a secure, read-only MySQL query.
 
 🧠 Important Rules:
 - Dates are stored as UNIX timestamps in **milliseconds** (e.g., 1748754000000). Use `FROM_UNIXTIME(date/1000)` to convert to MySQL DATETIME.
-- All queries must include: `WHERE accountId = {account_id}`
-- Only use SELECT queries. No INSERT, UPDATE, DELETE, DROP, or any modification.
+- Do not include any write operations (INSERT, UPDATE, DELETE, DROP).
+- You may query across multiple accounts.
+- Use only SELECT queries, join relevant tables when necessary.
 
 📂 Categories (categoryId → categoryName):
 1 → Food  
@@ -120,11 +119,9 @@ Use the given `account_id` to filter results. Do not include any write operation
 Here is the database schema:
 {schema}
 
-The user's accountId is: {account_id}
-
 Natural language: "{nl_query}"
 
-Return only the SQL query (in a MySQL-compatible format), no explanations.
+Return only the SQL query (MySQL-compatible), no explanations.
 """
     response = client.models.generate_content(
         model="gemini-2.0-flash",
@@ -132,7 +129,6 @@ Return only the SQL query (in a MySQL-compatible format), no explanations.
     )
 
     return response.text.strip("`")
-
 
 def generate_natural_language_response(original_query: str, sql_query: str, query_results: str) -> str:
     """Generate a natural language response based on the query and its results"""
@@ -199,14 +195,13 @@ def execute_safe_query(sql: str, original_query: str):
 
 
 def main():
-    account_id = 2 # Replace this with actual input
     nl_query = "List all my recurring (frequent) transactions."
 
     print(f"User Question: {nl_query}")
     print("-" * 60)
 
     # Generate SQL
-    sql = natural_language_to_sql(nl_query, account_id=account_id)
+    sql = natural_language_to_sql(nl_query)
 
     # Clean and execute SQL
     cleaned_sql = extract_sql(sql)
